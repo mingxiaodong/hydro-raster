@@ -62,9 +62,9 @@ import copy
 import numpy as np
 from . import Raster
 from numpy.linalg import norm
-from channel_geometry import point2segment, remove_duplicate_rows
-from channel_geometry import distance_p2l, in_channel
-from convert_coords import xy2bc
+from .channel_geometry import point2segment, remove_duplicate_rows
+from .channel_geometry import distance_p2l, in_channel
+from .convert_coords import xy2bc
 #%
 def remove_overhead_buildings(dem_obj, shape_polygon):
     """ remove overhead buildings on DEM file
@@ -240,3 +240,9 @@ def get_new_z(dem_obj, channel_dict, adjust_val):
     cells_z[ind] = z_cells_vec
     dem_obj.array = np.reshape(cells_z, dem_obj.array.shape)
     return dem_obj
+
+def main():
+    print('Package to show grid data')
+
+if __name__=='__main__':
+    main()

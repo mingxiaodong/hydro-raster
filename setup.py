@@ -20,7 +20,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 setup(
       name='hydro_raster',
       version='0.0.1',
-      description='To process raster data for hydro- logical/dynamic modelling',
+      description='To process raster data for hydro-logical/dynamic modelling',
       url='https://github.com/mingxiaodong/hydro-raster',
       author='Xiaodong Ming',
       author_email='x.ming@lboro.ac.uk',
@@ -36,19 +36,13 @@ setup(
       packages=find_packages(),
       include_package_data=True,
       package_data={'hydro_raster': ['sample/Example_DEM.asc',
-                                  'sample/DEM.gz',
-                                  'sample/landcover.gz',
-                                  'sample/rain_mask.gz',
-                                  'sample/rain_source.csv',
-                                  'sample/Example_data.npy'],},
+                                     'sample/DEM.gz',]},
       install_requires=['rasterio', 'scipy', 'pyshp', 'fiona', 
                         'matplotlib', 'numpy', 'pandas', 'imageio'],
       python_requires='>=3.6')
 
 """
 Required python package
-os, setuptools, copy, math, numpy, scipy, shutil, datetime, imageio, matplotlib,
-mpl_toolkits, pkg_resources, gzip, pickle, warnings, pandas
 
 #Sometimes you’ll want to use packages that are properly arranged with 
 #setuptools, but aren’t published to PyPI. In those cases, you can specify a 

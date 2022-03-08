@@ -15,7 +15,7 @@ import numpy as np
 from matplotlib import path
 from numpy.linalg import norm
 from shapely import geometry
-from coords_interp import line_1d_2d
+from .coords_interp import line_1d_2d
 def preprocessing_data(bankline0, bankline1, crossline_list):
     """ Preprocess raw data
     0.  Remove vertex without xy coordiantes (nans in points-array)

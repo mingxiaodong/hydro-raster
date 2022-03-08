@@ -235,7 +235,7 @@ class Raster(object):
             obj_new.crs = self.crs
         return obj_new
     
-    def rasterize(self, shp_filename, attr_name=None):
+    def rasterize(self, shp_filename, attr_name=None, include_nan=False):
         """
         rasterize a shapefile to the raster object and return a bool array
             with Ture value in and on the polygon/polyline or return an array 
@@ -249,6 +249,9 @@ class Raster(object):
         attr_name : str, optional
             name of the shape attribute to be burned into the raster. 
             The default is None.
+        include_nan: logical, optional
+            whether include index of nan cells.
+            The default is False.
 
         Returns
         -------
@@ -275,8 +278,11 @@ class Raster(object):
         if attr_name is None:
             shapes = [x for x in shapes if x != None]
             out_image, _ = mask.mask(ds_rio, shapes)
-            rasterized_array = out_image[0]
-            rasterized_array[np.isnan(rasterized_array)] = ds_rio.nodata
+            rasterized_array = out_image[0] # all cells within the polygons
+            if include_nan:
+                rasterized_array[np.isnan(rasterized_array)] = 1
+            else:
+                rasterized_array[np.isnan(rasterized_array)] = ds_rio.nodata
             index_array = np.full(rasterized_array.shape, True)
             index_array[rasterized_array == ds_rio.nodata] = False
             out_array = index_array
@@ -286,6 +292,8 @@ class Raster(object):
             out_arr = ds_rio.read(1)+np.nan
             burned = features.rasterize(shapes=shapes, fill=0, out=out_arr, 
                                         transform=ds_rio.transform)
+            if include_nan:
+                burned[np.isnan(burned)] = 1
             burned[burned == ds_rio.nodata] = np.nan
             out_array = burned
         ds_rio.close()
@@ -692,13 +700,23 @@ class Raster(object):
         return fig, ax
 #%% statistics function without nan
     def max(self, axis=None):
+        # max value of the array ignoring nan values
         return np.nanmax(self.array, axis=axis)
     
     def min(self, axis=None):
+        # min value of the array ignoring nan values
         return np.nanmin(self.array, axis=axis)
     
     def median(self, axis=None):
+        # median value of the array ignoring nan values
         return np.nanmedian(self.array, axis=axis)
+    
+    def duplicate(self):
+        """ duplicate the Raster object and return a new one so that change 
+        the new object will not affect the original one
+        """
+        obj_duplicate = copy.deepcopy(self)
+        return obj_duplicate
 #%%
 def merge(obj_origin, obj_target, resample_method='bilinear'):
     """Merge the obj_origin to obj_target

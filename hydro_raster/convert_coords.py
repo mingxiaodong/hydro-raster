@@ -16,12 +16,12 @@ from numpy.linalg import norm
 from scipy import interpolate
 from hipims_io import Raster
 from rasterio import mask
-from channel_geometry import discretize_river_section
-from channel_geometry import get_intersection, distance_p2l, break_bankline
-from channel_geometry import preprocessing_data, split_channel
-from channel_geometry import construct_channel_polygon, in_channel
-from channel_geometry import get_bounding_box
-from channel_geometry import match_break_points_by_relative_pos
+from .channel_geometry import discretize_river_section
+from .channel_geometry import get_intersection, distance_p2l, break_bankline
+from .channel_geometry import preprocessing_data, split_channel
+from .channel_geometry import construct_channel_polygon, in_channel
+from .channel_geometry import get_bounding_box
+from .channel_geometry import match_break_points_by_relative_pos
 
 #%%
 def cross_section2grid_elevation(bankline0, bankline1, crossline_list,
