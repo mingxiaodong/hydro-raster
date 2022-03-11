@@ -32,7 +32,7 @@ Tutorial
 
 1. Read a raster file
 ```
-from hydro_raster import Raster
+from hydro_raster.Raster import Raster
 from hydro_raster import get_sample_data
 tif_file_name = get_sample_data('tif')
 ras_obj = Raster(tif_file_name)
