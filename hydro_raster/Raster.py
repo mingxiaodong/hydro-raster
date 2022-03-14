@@ -111,7 +111,7 @@ class Raster(object):
         self.cellsize = header['cellsize']
         
         # num_valid_cells
-        self.num_valid_cells = np.sum(np.isnan(self.array))
+        self.num_valid_cells = np.sum(~np.isnan(self.array))
         self.size = self.array.size
         
         # summary
