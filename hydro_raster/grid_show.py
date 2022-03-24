@@ -18,6 +18,7 @@ import os
 import copy
 import imageio
 import numpy as np
+import shapefile
 import matplotlib.pyplot as plt
 #plt.switch_backend('agg')
 import matplotlib.colors as colors
@@ -26,6 +27,7 @@ from matplotlib import cm
 from matplotlib.colors import ListedColormap
 from matplotlib.patches import Patch
 from matplotlib.colors import LightSource
+from matplotlib.patches import Polygon
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 #%% draw inundation map with domain outline
 def mapshow(raster_obj=None, array=None, header=None, ax=None, figname=None,
@@ -166,12 +168,11 @@ def vectorshow(obj_x, obj_y, figname=None, figsize=None, dpi=300, ax=None,
     if 'figsize' in kwargs:
         figsize = kwargs['figsize']
     else:
-        figsize = None
+        figsize = figsize
     if ax is None:
         fig, ax = plt.subplots(1, figsize=figsize)
     else:
         fig = ax.get_figure()
-    # fig, ax = plt.subplots(1, figsize=figsize)
     ax.quiver(X, Y, U, V, **kwargs)
     ax.set_aspect('equal', 'box')
     if scale_ratio==1000:
@@ -233,32 +234,57 @@ def make_mp4(output_file, obj_list=None, header=None, array_3d=None,
     writer.close()
 
 def plot_shape_file(shp_file, figsize=None, ax=None, color='r', linewidth=0.5,
-                    **kw):
-    """plot a shape file to a map axis
+                    edgecolor='k', facecolor='none', alpha=1, **kw):
     """
-    import shapefile
+    plot a shapefile of polygons or polylines
+
+    Parameters
+    ----------
+    shp_file : string
+        shapefile name.
+    figsize : tuple of two int values, optional
+        set figsize. The default is None.
+    ax : axis object, optional
+    color : string or matplotlib color object, The default is 'r'
+    linewidth : scalar, optional
+        Set linewidth. The default is 0.5.
+    edgecolor : string or matplotlib color object, optional
+        Set edgecolor of polygon. The default is 'k'.
+    facecolor : TYPE, optional
+        Set facecolor of polygon. The default is 'none'.
+    alpha : scalar value between 0 to 1, optional
+        Set transparent rate of polygon. The default is 1.
+    **kw : other matplotlib plot arguments
+
+    Returns
+    -------
+    fig : figure handle
+    ax : axis handle
+
+    """
     sf = shapefile.Reader(shp_file)
     if ax is None:
         fig, ax = plt.subplots(1, figsize=figsize)
-#        xbound = None
-#        ybound = None
     else:
         fig = ax.get_figure()
-#        xbound = ax.get_xbound()
-#        ybound = ax.get_ybound()
-    # draw shape file on the rainfall map
-    for shape in sf.shapeRecords():
-        for i in range(len(shape.shape.parts)):
-            i_start = shape.shape.parts[i]
-            if i==len(shape.shape.parts)-1:
-                i_end = len(shape.shape.points)
+    for one_shape in sf.shapes():
+        for i in range(len(one_shape.parts)):
+            i_start = one_shape.parts[i]
+            if i==len(one_shape.parts)-1:
+                i_end = len(one_shape.points)
             else:
-                i_end = shape.shape.parts[i+1]
-            x = [i[0] for i in shape.shape.points[i_start:i_end]]
-            y = [i[1] for i in shape.shape.points[i_start:i_end]]
-            ax.plot(x, y, color=color, linewidth=linewidth, **kw)
-#    ax.set_xbound(xbound)
-#    ax.set_ybound(ybound)
+                i_end = one_shape.parts[i+1]
+            x = [i[0] for i in one_shape.points[i_start:i_end]]
+            y = [i[1] for i in one_shape.points[i_start:i_end]]
+            if 'POLYGON' in sf.shapeTypeName:
+                p = Polygon(one_shape.points, facecolor=facecolor, 
+                            edgecolor=edgecolor, alpha=alpha, 
+                            linewidth=linewidth, **kw)
+                ax.add_patch(p)
+            else:
+                ax.plot(x, y, color=color, linewidth=linewidth, **kw)
+    # ax.set_xlim([sf.bbox[0], sf.bbox[2]])
+    # ax.set_ylim([sf.bbox[1], sf.bbox[3]])
     return fig, ax
 
 def _plot_temp_figs(obj_list=None, header=None, array_3d=None,

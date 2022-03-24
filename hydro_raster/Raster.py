@@ -549,11 +549,13 @@ class Raster(object):
         if not hasattr(self, 'meta'):
             self.get_meta(src_epsg)
         meta = self.meta # dictionary
-        array_data = self.array+0
+        array_data = self.array+0.0
+        meta['dtype'] = array_data.dtype.name
         nomask = np.isnan(array_data)
         array_data[nomask] = meta['nodata']
         with rio.open(filename, 'w', **meta) as out_f:
             out_f.write(array_data, 1)
+        meta['dtype'] = self.array.dtype.name
     
     def to_rasterio_ds(self):
         """
