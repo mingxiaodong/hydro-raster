@@ -1,0 +1,5 @@
+include LICENSE.txt
+include README.md
+include hydro_raster/sample/CA1_5m.tif
+include hydro_raster/sample/CA1_overhead_features.*
+recursive-include hydro_raster/sample/*
