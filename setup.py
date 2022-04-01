@@ -19,7 +19,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
       name='hydro_raster',
-      version='0.0.2',
+      version='0.0.3',
       description='To process raster data for hydro-logical/dynamic modelling',
       url='https://github.com/mingxiaodong/hydro-raster',
       author='Xiaodong Ming',
@@ -35,8 +35,8 @@ setup(
       license='LICENSE.txt',
       packages=find_packages(),
       include_package_data=True,
-      package_data={'hydro_raster': ['sample/Example_DEM.asc',
-                                     'sample/DEM.gz',]},
+      package_data={'hydro_raster': ['sample/CA1_5m.tif',
+                                     'sample/CA1_overhead_features.shp',]},
       install_requires=['rasterio', 'scipy', 'pyshp', 'fiona', 
                         'matplotlib', 'numpy', 'pandas', 'imageio'],
       python_requires='>=3.6')
