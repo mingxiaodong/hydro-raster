@@ -133,7 +133,7 @@ def rankshow(raster_obj=None, array=None, header=None, figname=None,
         fig.savefig(figname, dpi=dpi)
     return fig, ax
 
-def hillshade(raster_obj, figsize=None, azdeg=315, altdeg=45, vert_exag=1,
+def hillshade(raster_obj, ax=None, figsize=None, azdeg=315, altdeg=45, vert_exag=1,
               cmap=None, blend_mode='overlay', alpha=1, scale_ratio=1):
     """ Draw a hillshade map
     """
@@ -146,7 +146,10 @@ def hillshade(raster_obj, figsize=None, azdeg=315, altdeg=45, vert_exag=1,
         cmap = plt.cm.gist_earth
     else:
         cmap = plt.get_cmap(cmap)
-    fig, ax = plt.subplots(figsize=figsize)
+    if ax is None:
+        fig, ax = plt.subplots(figsize=figsize)
+    else:
+	fig = plt.gcf()
     rgb = ls.shade(array, cmap=cmap, blend_mode=blend_mode, 
                    vert_exag=vert_exag)
     ax.imshow(rgb, extent=raster_obj.extent, alpha=alpha)
