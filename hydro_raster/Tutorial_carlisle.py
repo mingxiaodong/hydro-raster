@@ -13,8 +13,8 @@ To do:
 import numpy as np
 import scipy.io as sio
 import matplotlib.pyplot as plt
-from convert_coords import cross_section2grid_elevation
-from hipims_io import Raster
+from hydro_raster.convert_coords import cross_section2grid_elevation
+from hydro_raster.Raster import Raster
 #% load mat data
 mat_fname = 'CarlisleRiverChannelData.mat'
 mat_contents = sio.loadmat(mat_fname)
