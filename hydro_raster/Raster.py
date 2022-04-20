@@ -572,7 +572,10 @@ class Raster(object):
         ds_rio = rio.open(filename, 'w+', **meta)
         ds_rio.write(self.array, 1)
         if os.path.isfile(filename):
-            os.remove(filename)
+            try:
+                os.remove(filename)
+            except:
+                pass
         return ds_rio
     
     def get_meta(self, src_epsg=27700):
