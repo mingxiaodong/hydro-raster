@@ -149,7 +149,7 @@ def hillshade(raster_obj, ax=None, figsize=None, azdeg=315, altdeg=45, vert_exag
     if ax is None:
         fig, ax = plt.subplots(figsize=figsize)
     else:
-	fig = plt.gcf()
+	    fig = plt.gcf()
     rgb = ls.shade(array, cmap=cmap, blend_mode=blend_mode, 
                    vert_exag=vert_exag)
     ax.imshow(rgb, extent=raster_obj.extent, alpha=alpha)
