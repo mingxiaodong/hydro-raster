@@ -65,7 +65,12 @@ def arc_header_read(file_name, header_rows=6):
             for line in file_h:
                 if row_ite <= header_rows:
                     line = line.split(" ", 1)
-                    header[line[0]] = float(line[1])
+                    header_key = line[0]
+                    header_value = float(line[1])
+                    # convert key to lowercase except nodata_value
+                    if len(header_key) < 12:
+                        header_key = header_key.lower()
+                    header[header_key] = header_value
                 else:
                     break
                 row_ite = row_ite+1
@@ -75,7 +80,12 @@ def arc_header_read(file_name, header_rows=6):
             for line in file_h:
                 if row_ite <= header_rows:
                     line = line.split(" ", 1)
-                    header[line[0]] = float(line[1])
+                    # convert key to lowercase except nodata_value
+                    header_key = line[0]
+                    header_value = float(line[1])
+                    if len(header_key) < 12:
+                        header_key = header_key.lower()
+                    header[header_key] = header_value
                 else:
                     break
                 row_ite = row_ite+1
@@ -529,6 +539,21 @@ def _set_color_legend(ax, norm, cmp,
               bbox_to_anchor=bbox_to_anchor,
               facecolor=facecolor)
     return ax
+
+def _insensitive_header_keys(header_dict):
+    """
+    
+
+    Parameters
+    ----------
+    header_dict : change the string value 
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    """
 
 def main():
     print('Fucntions to process asc data')
