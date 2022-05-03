@@ -1,8 +1,7 @@
 hydro_raster
 --------
 Python code to process raster data for hydroligical or hydrodynamic modelling, 
-e.g., [HiPIMS flood model](https://github.com/HEMLab/hipims). This code follows
- [Google Python Style Guide](http://google.github.io/styleguide/pyguide.html).
+e.g., [HiPIMS flood model](https://github.com/HEMLab/hipims). The codes are also included in the HiPIMS python API [Pypims](https://pypims.readthedocs.io/en/latest/). The style of this package follows the [Google Python Style Guide](http://google.github.io/styleguide/pyguide.html).
 
 Python version: >=3.6. To use the full function of this package for processing 
 raster and feature files, *rasterio* and *pyshp* are required.
@@ -30,6 +29,8 @@ pip install .
 
 Tutorial
 
+A [jupyter-notebook file](https://github.com/mingxiaodong/hydro-raster/blob/main/demo/tutorial_edit_DEM.ipynb) is available to show a more detailed tutorial with outputs/plots of its codes.
+
 1. Read a raster file
 ```
 from hydro_raster.Raster import Raster
@@ -45,7 +46,7 @@ ras_obj.rankshow(breaks=[0, 10, 20, 30, 40, 50])
 3. Clip raster file
 ```
 clip_extent = (340761, 341528, 554668, 555682) # left, right, bottom, top
-ras_obj_cut = ras_obj.rect_clip(clip_extent) # raster can be cutted by a shapfile as well using clip function
+ras_obj_cut = ras_obj.rect_clip(clip_extent) # raster can aslo be cut by a shapfile using 'clip' function
 ras_obj_cut.mapshow()
 ```
 3. Rasterize polygons on a raster and return an index array with the same dimension of the raster array
@@ -53,7 +54,7 @@ ras_obj_cut.mapshow()
 shp_file_name = get_sample_data('shp')
 index_array = ras_obj_cut.rasterize(shp_file_name)
 ```
-4. Change raster cell values within the polygons by adding 20
+4. Change raster cell values within the polygons by adding a fixed value
 ```
 ras_obj_new = ras_obj_cut.duplicate()
 ras_obj_new.array[index_array] = ras_obj_cut.array[index_array]+20
