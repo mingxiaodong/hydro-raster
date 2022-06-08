@@ -64,7 +64,7 @@ from . import Raster
 from numpy.linalg import norm
 from .channel_geometry import point2segment, remove_duplicate_rows
 from .channel_geometry import distance_p2l, in_channel
-from .convert_coords import xy2bc
+from .convert_coords import interp_one_reach
 #%
 def remove_overhead_buildings(dem_obj, shape_polygon):
     """ remove overhead buildings on DEM file
@@ -232,8 +232,9 @@ def get_new_z(dem_obj, channel_dict, adjust_val):
     xy_cells_vec = cells_xy[ind]
     z_cells_vec = cells_z[ind]
     if adjust_val is None:
-        bs, cs, zs = xy2bc(xy_cells_vec, channel_dict, 
-                           max_error=dem_obj.cellsize*2)
+        bs, cs, zs = interp_one_reach(channel_dict,
+                                      xy_cells_vec[:, 0], xy_cells_vec[:, 1],
+                                      max_error=dem_obj.cellsize*2)
         z_cells_vec[~np.isnan(zs)] = zs[~np.isnan(zs)]
     else:
         z_cells_vec = z_cells_vec+adjust_val
