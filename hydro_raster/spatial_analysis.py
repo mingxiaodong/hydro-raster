@@ -27,6 +27,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import rasterio as rio
+import shapefile
 from matplotlib import cm
 from matplotlib.colors import ListedColormap
 from matplotlib.patches import Patch
@@ -208,6 +209,20 @@ def byte_file_read(file_name):
     header['ncols'] = int(header['ncols'])
     header['nrows'] = int(header['nrows'])
     return array, header
+
+def read_shapefile_as_list(shp_name):
+    # read shapefile as a list of dict using pyshp
+    # return a list of dict giving geometry and a list of dict giving fields
+    sf = shapefile.Reader(shp_name)
+    shapes_all = sf.shapes()
+    shape_dict_list = []
+    for one_shape in shapes_all:
+        shape_dict = {'type':one_shape.shapeTypeName, 
+                      'coordinates':one_shape.points}
+        shape_dict_list.append(shape_dict)
+    records_all = sf.records()
+    record_dict_list = [x.as_dict() for x in records_all]
+    return shape_dict_list, record_dict_list
 
 #%% Combine raster files
 def combine_raster(asc_files, num_header_rows=6):

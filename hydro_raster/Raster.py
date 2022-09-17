@@ -18,7 +18,8 @@ To do:
 import os
 import copy
 import math
-import fiona
+# import fiona
+import shapefile
 import numpy as np
 import rasterio as rio
 from scipy import interpolate
@@ -211,15 +212,17 @@ class Raster(object):
         from rasterio import mask
         ds_rio = self.to_rasterio_ds()
         if type(clip_mask) is str:
-            with fiona.open(clip_mask, 'r') as shapefile:
-                shapes = [feature['geometry'] for feature in shapefile]
+            with shapefile.Reader(clip_mask) as shp:
+                shapes_geojson = shp.__geo_interface__
+            shape_geoms = [x['geometry'] for x in shapes_geojson['features']]
+            shape_geoms = [x for x in shape_geoms if x != None]
         elif type(clip_mask) is np.ndarray:
-            shape = {'type':'Polygon', 'coordinates':[clip_mask]}
-            shapes = [shape]
+            shape_geoms = {'type':'Polygon', 'coordinates':[clip_mask]}
+            shape_geoms = [shape_geoms]
         else:
             raise IOError('mask must be either a string or a numpy array')
         
-        out_image, out_transform = mask.mask(ds_rio, shapes, crop=True) #
+        out_image, out_transform = mask.mask(ds_rio, shape_geoms, crop=True) #
         ds_rio.close()
         array_new = out_image[0]
         cellsize = out_transform[0]
@@ -244,8 +247,8 @@ class Raster(object):
 
         Parameters
         ----------
-        shp_filename : str or a list of shapes with attributes 'geometry'
-            shapefile must has the same crs with the raster file
+        shp_filename : str or a pyshp shapefile object and must has the same 
+            crs with the raster file
         attr_name : str, optional
             name of the shape attribute to be burned into the raster. 
             The default is None.
@@ -260,24 +263,20 @@ class Raster(object):
             Array providing values of one attribute of the shapefile
 
         """
-        
         from rasterio import mask
         from rasterio import features
         ds_rio = self.to_rasterio_ds()
         if type(shp_filename) is str:
-            with fiona.open(shp_filename, 'r') as shapefile:
-                if attr_name is not None:
-                    shapes = [(feature['geometry'], 
-                               feature['properties'][attr_name]) for 
-                              feature in shapefile]
-                else:
-                    shapes = [feature['geometry'] for feature in shapefile]
+            shp_obj = shapefile.Reader(shp_filename)
+
         else:
-            shapes = shp_filename
+            shp_obj = shp_filename
         
+        shapes_geojson = shp_obj.__geo_interface__
+        shape_geoms = [x['geometry'] for x in shapes_geojson['features']]
+        shape_geoms = [x for x in shape_geoms if x != None]
         if attr_name is None:
-            shapes = [x for x in shapes if x != None]
-            out_image, _ = mask.mask(ds_rio, shapes)
+            out_image, _ = mask.mask(ds_rio, shape_geoms)
             rasterized_array = out_image[0] # all cells within the polygons
             if include_nan:
                 rasterized_array[np.isnan(rasterized_array)] = 1
@@ -287,10 +286,13 @@ class Raster(object):
             index_array[rasterized_array == ds_rio.nodata] = False
             out_array = index_array
         else:
-            shapes = [x for x in shapes if x[0] != None]
-            shapes = ((geom,value) for geom, value in shapes)
+            shapes_attr = [shp_rec[attr_name] for shp_rec \
+                              in shp_obj.records()]
+            
+            shapes_iterable = tuple(zip(shape_geoms, shapes_attr))            
             out_arr = ds_rio.read(1)+np.nan
-            burned = features.rasterize(shapes=shapes, fill=0, out=out_arr, 
+            burned = features.rasterize(shapes=shapes_iterable, fill=0, 
+                                        out=out_arr, 
                                         transform=ds_rio.transform)
             if include_nan:
                 burned[np.isnan(burned)] = 1
