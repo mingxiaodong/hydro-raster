@@ -212,14 +212,19 @@ class Raster(object):
         from rasterio import mask
         ds_rio = self.to_rasterio_ds()
         if type(clip_mask) is str:
-            with shapefile.Reader(clip_mask) as shp:
-                shapes_geojson = shp.__geo_interface__
+            try:
+                with shapefile.Reader(clip_mask) as shp:
+                    shapes_geojson = shp.__geo_interface__
+            except:
+                ds_rio.close()
+                raise IOError(f'cannot find {clip_mask}')
             shape_geoms = [x['geometry'] for x in shapes_geojson['features']]
             shape_geoms = [x for x in shape_geoms if x != None]
         elif type(clip_mask) is np.ndarray:
             shape_geoms = {'type':'Polygon', 'coordinates':[clip_mask]}
             shape_geoms = [shape_geoms]
         else:
+            ds_rio.close()
             raise IOError('mask must be either a string or a numpy array')
         
         out_image, out_transform = mask.mask(ds_rio, shape_geoms, crop=True) #
