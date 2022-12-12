@@ -110,6 +110,7 @@ class Raster(object):
             raise ValueError(('shape of array is not consistent with '
                               'nrows and ncols in header'))
         self.cellsize = header['cellsize']
+        self.NODATA_value = header['NODATA_value']
         
         # num_valid_cells
         self.num_valid_cells = np.sum(~np.isnan(self.array))
@@ -119,6 +120,8 @@ class Raster(object):
         self.get_summary()
         
         self.to_rasterio = self.write_tif
+        
+        self.copy = self.duplicate
 
             
 #%%============================= Spatial analyst ==============================   
@@ -140,6 +143,21 @@ class Raster(object):
         self._summary = summary
         return summary
 
+    def to_int(self, dtype='int32'):
+        """Convert data array to int type
+        nan value will be replaced as NODATA_value, default: -9999 
+        
+
+        Returns
+        -------
+        None.
+
+        """
+        new_obj = self.copy()
+        new_obj.array[np.isnan(self.array)] = self.NODATA_value
+        new_obj.array = np.around(new_obj.array).astype(dtype)
+        return new_obj
+
     def set_crs(self, crs):
         """set reference coordinate system
         Parameters
@@ -156,39 +174,65 @@ class Raster(object):
         else:
             raise IOError('crs must be int|string|rasterio.crs object')
 
-    def rect_clip(self, clip_extent):
+    def rect_clip(self, clip_extent, match_extent=False):
         """clip raster according to a rectangle extent
 
         Args:
             clip_extent: list of [left, right, bottom, top]
+            match_extent: logical. If True, the x- and y- llcorner coordiantes
+              in header will be adjusted to match the coordinates of extent.
+              And the clip extent must be within the original extent.
+              Otherwise, the header will follow the original object.
 
         Return:
             Raster: a new raster object
         """
-        X = clip_extent[0:2]
-        Y = clip_extent[2:4]
-        rows, cols = sp.map2sub(X, Y, self.header)
-        x_centre, y_centre = sp.sub2map(rows, cols, self.header)
-        xllcorner = min(x_centre)-0.5*self.header['cellsize']
-        yllcorner = min(y_centre)-0.5*self.header['cellsize']
+        X = np.array(clip_extent[0:2])
+        Y = np.array(clip_extent[2:4])
+        cellsize = self.cellsize
         header_new = copy.deepcopy(self.header)
-        if max(rows) >= self.header['nrows']:
-            max_row = self.header['nrows']
+
+        if match_extent:
+            insider_flag = (clip_extent[0] >= self.extent[0]) * \
+                           (clip_extent[1] <= self.extent[1]) * \
+                           (clip_extent[2] >= self.extent[2]) * \
+                           (clip_extent[3] <= self.extent[3])
+            if insider_flag is False:
+                raise ValueError(('clip extent is beyond the extent of '
+                                 'original raster'))
+            xllcorner = X.min()
+            yllcorner = Y.min()
+            nrows = np.around((Y.max()-yllcorner)/cellsize).astype('int')
+            ncols = np.around((X.max()-xllcorner)/cellsize).astype('int')
+            row0, col0 = sp.map2sub(xllcorner+cellsize/2, 
+                                    yllcorner+cellsize/2, self.header)
+            array_new = self.array[row0-nrows:row0,
+                                   col0:col0+ncols]
         else:
-            max_row = max(rows)+1
-        if max(cols) >= self.header['ncols']:
-            max_col = self.header['ncols']
-        else:
-            max_col = max(cols)+1
-        if min(rows) <= 0:
-            min_row = 0
-        else:
-            min_row = min(rows) 
-        if min(cols) <= 0:
-            min_col = 0
-        else:
-            min_col = min(cols) 
-        array_new = self.array[min_row:max_row,
+            X_centre = np.array([X.min()+cellsize/2, X.max()-cellsize/2])
+            Y_centre = np.array([Y.min()+cellsize/2, Y.max()-cellsize/2])
+            rows, cols = sp.map2sub(X_centre, Y_centre, self.header)
+            # get x and y centre coords in the original raster
+            x_centre, y_centre = sp.sub2map(rows, cols, self.header)
+            xllcorner = min(x_centre)-cellsize/2
+            yllcorner = min(y_centre)-cellsize/2
+            if max(rows) >= self.header['nrows']:
+                max_row = self.header['nrows']
+            else:
+                max_row = max(rows)+1
+            if max(cols) >= self.header['ncols']:
+                max_col = self.header['ncols']
+            else:
+                max_col = max(cols)+1
+            if min(rows) <= 0:
+                min_row = 0
+            else:
+                min_row = min(rows) 
+            if min(cols) <= 0:
+                min_col = 0
+            else:
+                min_col = min(cols) 
+            array_new = self.array[min_row:max_row,
                                min_col:max_col]
         header_new['nrows'] = array_new.shape[0]
         header_new['ncols'] = array_new.shape[1]
@@ -325,8 +369,8 @@ class Raster(object):
         ind = method_list.index(method)
         upscale_factor = self.cellsize/new_cellsize
         ds_rio = self.to_rasterio_ds()
-        new_shape = (1, int(ds_rio.height * upscale_factor),
-                        int(ds_rio.width * upscale_factor))
+        new_shape = (1, np.around(ds_rio.height * upscale_factor).astype('int'),
+                        np.around(ds_rio.width * upscale_factor).astype('int'))
         resampling_method = Resampling(ind)
         data = ds_rio.read(out_shape=new_shape, resampling=resampling_method)
         data = data[0]
@@ -539,7 +583,7 @@ class Raster(object):
             self.write_asc(output_file, compression)
         
     
-    def write_tif(self, output_file, src_epsg=27700):
+    def write_tif(self, output_file, src_epsg=27700, dtype='float64'):
         """ Convert to a rasterio dataset
         
         Args:
@@ -553,10 +597,16 @@ class Raster(object):
             filename = output_file
         else:
             filename = output_file+'.tif'
-        if not hasattr(self, 'meta'):
-            self.get_meta(src_epsg)
-        meta = self.meta # dictionary
-        array_data = self.array+0.0
+        if 'int' in dtype:
+            new_obj = self.to_int(dtype)
+            array_data = new_obj.array+0
+            new_obj.get_meta(src_epsg)
+            meta = new_obj.meta
+        else:
+            array_data = self.array+0.0
+            if not hasattr(self, 'meta'):
+                self.get_meta(src_epsg)
+            meta = self.meta # dictionary
         meta['dtype'] = array_data.dtype.name
         nomask = np.isnan(array_data)
         array_data[nomask] = meta['nodata']
@@ -729,6 +779,7 @@ class Raster(object):
         """
         obj_duplicate = copy.deepcopy(self)
         return obj_duplicate
+    
 #%%
 def merge(obj_origin, obj_target, resample_method='bilinear'):
     """Merge the obj_origin to obj_target
