@@ -50,7 +50,6 @@ def mapshow(raster_obj=None, array=None, header=None, ax=None, figname=None,
         array = raster_obj.array
         header = raster_obj.header
     # change NODATA_value to nan
-    np.warnings.filterwarnings('ignore')
     array = array+0
     ind = array == header['NODATA_value']
     if ind.sum()>0:
@@ -109,7 +108,6 @@ def rankshow(raster_obj=None, array=None, header=None, figname=None,
     if raster_obj is not None:
         array = raster_obj.array
         header = raster_obj.header
-    np.warnings.filterwarnings('ignore')
     ind = array == header['NODATA_value']
     array = array.astype('float64')+0
     array[ind] = np.nan
