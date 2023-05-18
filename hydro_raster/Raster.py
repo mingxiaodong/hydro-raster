@@ -174,7 +174,7 @@ class Raster(object):
         else:
             raise IOError('crs must be int|string|rasterio.crs object')
 
-    def rect_clip(self, clip_extent, match_extent=False):
+    def rect_clip(self, clip_extent, match_extent=False, return_slice=False):
         """clip raster according to a rectangle extent
 
         Args:
@@ -183,6 +183,8 @@ class Raster(object):
               in header will be adjusted to match the coordinates of extent.
               And the clip extent must be within the original extent.
               Otherwise, the header will follow the original object.
+            return_slice: logical. If True, the slices of object to clip array
+              will be returned as an additional return value.
 
         Return:
             Raster: a new raster object
@@ -206,8 +208,10 @@ class Raster(object):
             ncols = np.around((X.max()-xllcorner)/cellsize).astype('int')
             row0, col0 = sp.map2sub(xllcorner+cellsize/2, 
                                     yllcorner+cellsize/2, self.header)
-            array_new = self.array[row0-nrows:row0,
-                                   col0:col0+ncols]
+            min_row = row0-nrows
+            max_row = row0
+            min_col = col0
+            max_col = col0+ncols
         else:
             X_centre = np.array([X.min()+cellsize/2, X.max()-cellsize/2])
             Y_centre = np.array([Y.min()+cellsize/2, Y.max()-cellsize/2])
@@ -231,9 +235,9 @@ class Raster(object):
             if min(cols) <= 0:
                 min_col = 0
             else:
-                min_col = min(cols) 
-            array_new = self.array[min_row:max_row,
-                               min_col:max_col]
+                min_col = min(cols)
+        loc = (slice(min_row, max_row), slice(min_col, max_col))
+        array_new = self.array[loc]
         header_new['nrows'] = array_new.shape[0]
         header_new['ncols'] = array_new.shape[1]
         header_new['xllcorner'] = xllcorner
@@ -241,7 +245,10 @@ class Raster(object):
         obj_new = Raster(array=array_new, header=header_new)
         if hasattr(self, 'crs'):
             obj_new.crs = self.crs
-        return obj_new
+        if return_slice:
+            return obj_new, loc
+        else:
+            return obj_new
     
     def clip(self, clip_mask=None):
         """clip raster according to a mask
