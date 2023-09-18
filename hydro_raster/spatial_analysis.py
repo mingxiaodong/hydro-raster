@@ -190,7 +190,7 @@ def tif_read(file_name):
               'xllcorner':xllcorner, 'yllcorner':yllcorner,
               'cellsize':cellsize, 'NODATA_value':-9999}     
     crs = ras_meta['crs']
-    return array, header, crs
+    return array, header, crs, ras_meta
 
 def byte_file_read(file_name):
     """ Read file from a bytes object
@@ -280,97 +280,6 @@ def combine_raster(asc_files, num_header_rows=6):
     array[array == header['NODATA_value']] = float('nan')
     extent = header2extent(header)
     return array, header, extent
-
-
-#%% ----------------------------Visulization-----------------------------------
-def map_show(array, header, figname=None, figsize=None, dpi=300,
-             vmin=None, vmax=None,
-             cax=True, relocate=False, scale_ratio=1):
-    """Display raster data
-
-    Args:
-        figname: the file name to export map, if figname is empty, then the 
-        figure will not be saved
-        figsize: the size of map
-        dpi: The resolution in dots per inch
-        vmin and vmax: the data range that the colormap covers
-    """
-    np.warnings.filterwarnings('ignore')
-    array = array+0
-    fig, ax = plt.subplots(1, figsize=figsize)
-    # draw grid data
-    array[array==header['NODATA_value']]=np.nan
-    # adjust tick label and axis label
-    map_extent = header2extent(header)
-    map_extent = _adjust_map_extent(map_extent, relocate, scale_ratio)
-    img=plt.imshow(array, extent=map_extent, vmin=vmin, vmax=vmax)
-    # colorbar
-	# create an axes on the right side of ax. The width of cax will be 5%
-    # of ax and the padding between cax and ax will be fixed at 0.05 inch.
-    if cax==True:
-        divider = make_axes_locatable(ax)
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        plt.colorbar(img, cax=cax)
-    ax.axes.grid(linestyle='-.', linewidth=0.2)
-    # save figure
-    if figname is not None:
-        fig.savefig(figname, dpi=dpi)
-    return fig, ax
-
-def rank_show(array, header, figname=None, figsize=None, dpi=300,
-            breaks=[0.2, 0.3, 0.5, 1, 2], # default for water depth
-            show_colorbar=True, show_colorlegend=False,
-            relocate=False, scale_ratio=1):
-    """Categorize array data as ranks according to the breaks and display a 
-    ranked map
-    """
-    np.warnings.filterwarnings('ignore')
-    array = array+0
-    if 'NODATA_value' in header.keys():
-        array[array == header['NODATA_value']] = np.nan
-    if breaks[0] > np.nanmin(array):
-        breaks.insert(0, np.nanmin(array))
-    if breaks[-1] < np.nanmax(array):
-        breaks.append(np.nanmax(array))        
-    norm = colors.BoundaryNorm(breaks, len(breaks))
-    blues = cm.get_cmap('blues', norm.N)
-    newcolors = blues(np.linspace(0, 1, norm.N))
-    white = np.array([255/256, 255/256, 255/256, 1])
-    newcolors[0, :] = white
-    newcmp = ListedColormap(newcolors)
-    map_extent = header2extent(header)
-    map_extent = _adjust_map_extent(map_extent, relocate, scale_ratio)
-    fig, ax = plt.subplots(figsize=figsize)
-    chm_plot = ax.imshow(array, extent=map_extent, 
-                         cmap=newcmp, norm=norm, alpha=0.7)
-    # create colorbar
-    if show_colorbar is True:
-        _set_colorbar(ax, chm_plot, norm)
-    if show_colorlegend is True: # legend
-        _set_color_legend(ax, norm, newcmp)
-    plt.show()
-    # save figure
-    if figname is not None:
-        fig.savefig(figname, dpi=dpi)
-    return fig, ax
-
-def hillshade_show(array, header, figsize=None,
-                   azdeg=315, altdeg=45, vert_exag=1):
-    """ Draw a hillshade map
-    """
-    array = array+0
-    array[np.isnan(array)] = 0
-    array[array == header['NODATA_value']] = 0
-    map_extent = header2extent(header)
-    ls = LightSource(azdeg=azdeg, altdeg=altdeg)
-    cmap = plt.cm.gist_earth
-    fig, ax = plt.subplots(figsize=figsize)
-    rgb = ls.shade(array, cmap=cmap, 
-                   blend_mode='overlay',vert_exag=vert_exag)
-    ax.imshow(rgb, extent=map_extent)
-#    ax.set_axis_off()
-    plt.show()
-    return fig, ax
 
 #%% ------------------------Supporting functions-------------------------------
 def check_file_existence(file_name):

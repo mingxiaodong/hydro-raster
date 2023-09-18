@@ -82,7 +82,7 @@ def mapshow(raster_obj=None, array=None, header=None, ax=None, figname=None,
 
 def rankshow(raster_obj=None, array=None, header=None, figname=None, 
              figsize=None, dpi=200, ax=None, color='Blues',
-             breaks=[0.2, 0.3, 0.5, 1, 2],
+             breaks=[0.2, 0.3, 0.5, 1, 2], title=None,
              legend_kw=None, scale_ratio=1, alpha=1, **kwargs):
     """ Display water depth map in ranks defined by breaks
 
@@ -127,6 +127,8 @@ def rankshow(raster_obj=None, array=None, header=None, figname=None,
         _set_color_legend(ax, norm, newcmp, legend_kw)
     else:
         _set_rank_colorbar(ax, chm_plot, norm)
+    if title is not None:
+        ax.set_title(title)
     if figname is not None:
         fig.savefig(figname, dpi=dpi)
     return fig, ax
@@ -338,7 +340,6 @@ def _set_rank_colorbar(ax, img, norm):
     y_tick_values = cax.get_yticks()
     boundary_means = [np.mean((y_tick_values[ii],y_tick_values[ii-1])) 
                         for ii in range(1, len(y_tick_values))]
-    print(norm.boundaries)
     category_names = [(str(norm.boundaries[ii-1])+'~'+
                        str(norm.boundaries[ii]))
                       for ii in range(1, len(norm.boundaries))]
@@ -411,7 +412,6 @@ def _adjust_axis_scale(ax, scale_ratio=1000, unit_tag='km'):
         _reset_axis_tick(ax, 'x', 1000)
     yticks = ax.get_yticks()
     dy = yticks[1]-yticks[0]
-    print(dy)
     if dy < 1000:
         _reset_axis_tick(ax, 'y', 1000)
     xticks = ax.get_xticks()
@@ -420,10 +420,8 @@ def _adjust_axis_scale(ax, scale_ratio=1000, unit_tag='km'):
     xticks_label_list = [str(x) for x in xticks_label]
     yticks_label = (yticks/1000).astype('int64')
     yticks_label_list = [str(y) for y in yticks_label]
-    # print(yticks)
     ax.set_xticklabels(xticks_label_list)
     ax.set_yticklabels(yticks_label_list)
-    # print(yticks_label_list)
     ax.set_xlabel(unit_tag+' towards east')
     ax.set_ylabel(unit_tag+' towards north')
     return ax

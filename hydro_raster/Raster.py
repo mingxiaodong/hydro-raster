@@ -18,10 +18,12 @@ To do:
 import os
 import copy
 import math
-# import fiona
 import shapefile
 import numpy as np
 import rasterio as rio
+import geopandas as gpd
+from rasterio.features import shapes as rio_shapes
+from shapely.geometry import shape as shapely_shape
 from scipy import interpolate
 from . import spatial_analysis as sp
 from . import grid_show as gs
@@ -72,7 +74,8 @@ class Raster(object):
         # get data from file or arguments
         if type(source_file) is str: # tif, txt, asc, or gz file
             if source_file.endswith('.tif'): # only read the first band
-                array, header, crs = sp.tif_read(source_file)
+                array, header, crs, ras_meta = sp.tif_read(source_file)
+                self.meta = ras_meta
             else:
                 array, header, crs = sp.arcgridread(source_file,
                                                     num_header_rows)                
@@ -321,16 +324,16 @@ class Raster(object):
         """
         from rasterio import mask
         from rasterio import features
-        ds_rio = self.to_rasterio_ds()
+        
         if type(shp_filename) is str:
             shp_obj = shapefile.Reader(shp_filename)
-
         else:
             shp_obj = shp_filename
         
         shapes_geojson = shp_obj.__geo_interface__
         shape_geoms = [x['geometry'] for x in shapes_geojson['features']]
         shape_geoms = [x for x in shape_geoms if x != None]
+        ds_rio = self.to_rasterio_ds()
         if attr_name is None:
             out_image, _ = mask.mask(ds_rio, shape_geoms)
             rasterized_array = out_image[0] # all cells within the polygons
@@ -342,9 +345,7 @@ class Raster(object):
             index_array[rasterized_array == ds_rio.nodata] = False
             out_array = index_array
         else:
-            shapes_attr = [shp_rec[attr_name] for shp_rec \
-                              in shp_obj.records()]
-            
+            shapes_attr = [shp_rec[attr_name] for shp_rec in shp_obj.records()]
             shapes_iterable = tuple(zip(shape_geoms, shapes_attr))            
             out_arr = ds_rio.read(1)+np.nan
             burned = features.rasterize(shapes=shapes_iterable, fill=0, 
@@ -396,8 +397,7 @@ class Raster(object):
         if hasattr(self, 'crs'):
             obj_new.crs = self.crs
         return obj_new
-        
-    
+            
     def point_interpolate(self, points, values, method='nearest'):
         """ Interpolate values of 2D points to all cells on the Raster object
 
@@ -664,7 +664,6 @@ class Raster(object):
                     'transform': transform}
         self.meta = ras_meta
         
-    
     def reproject(self, dst_epsg, output_file=None):
         """Reproject the raster to a different coordinate referenece system
         
@@ -704,6 +703,52 @@ class Raster(object):
         if output_file is not None:
             dst_rio.close()
         return dst_rio
+
+    def vectorize(self, valid_mask=None):
+        """vectorize raster data array to a geopandas polygon dataframe which 
+        can be written as ESRI shapefile or other formats
+
+        Parameters
+        ----------
+        valid_mask : logical numpy array, optional
+            define the cells to be rasterized. The default is None.
+
+        Returns
+        -------
+        gdf : geopandas dataframe
+
+        """
+        transform = self.to_rasterio_ds().transform
+        data_array = self.array.copy()
+        
+        if np.issubdtype(data_array.dtype, int):
+            data_array = data_array.astype('int32')
+        else: 
+            data_array = data_array.astype('float32') 
+        if valid_mask is None:
+            mask = np.logical_and(~np.isnan(data_array),
+                                  data_array != self.NODATA_value)
+        else:
+            mask = valid_mask
+            
+        output_polygons = rio_shapes(data_array, mask=mask, transform=transform) #
+        polygon_collection = []
+        value_collection = []
+        for poly, val in output_polygons:
+            oneshape = shapely_shape(poly)
+            polygon_collection.append(oneshape.normalize())
+            value_collection.append(val)
+        features = [i for i in range(len(polygon_collection))]
+        if hasattr(self, 'crs'):
+            crs = self.crs
+        else:
+            crs = 'EPSG:27700'
+        # add crs using wkt or EPSG to have a .prj file
+        gdf = gpd.GeoDataFrame({'feature': features, 'geometry': polygon_collection}, 
+                               crs=crs)
+        gdf['value'] = value_collection
+        return gdf
+    
 #%%=============================Visualization==================================
     def mapshow(self, **kwargs):
         """Display raster data without projection
