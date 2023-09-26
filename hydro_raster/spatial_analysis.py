@@ -302,6 +302,24 @@ def header2extent(header):
     extent = (left, right, bottom, top)
     return extent
 
+def meta2header(ras_meta):
+    """ Transfer rasterio meta object to a header dict
+    """
+    ncols = ras_meta['width']
+    nrows = ras_meta['height']
+    transform = ras_meta['transform']
+    cellsize = transform[0]
+    xllcorner = transform[2]
+    yllcorner = transform[5] - cellsize*nrows
+    header = {}
+    header['ncols'] = ncols
+    header['nrows'] = nrows
+    header['xllcorner'] = xllcorner
+    header['yllcorner'] = yllcorner
+    header['cellsize'] = cellsize
+    header['NODATA_value'] = ras_meta['nodata']
+    return header
+
 def shape_extent_to_header(shape, extent, nan_value=-9999):
     """ Create a header dict with shape and extent of an array
     """

@@ -11,7 +11,7 @@ Raster
 To do:
     1. Read, write, analyze, and visualise gridded raster data
     2. Convert shape data to raster data
-
+    3. Convert raster data to shapefile
 ---------------
 
 """
@@ -19,9 +19,11 @@ import os
 import copy
 import math
 import shapefile
+import shapely
 import numpy as np
 import rasterio as rio
 import geopandas as gpd
+
 from rasterio.features import shapes as rio_shapes
 from shapely.geometry import shape as shapely_shape
 from scipy import interpolate
@@ -297,7 +299,8 @@ class Raster(object):
             obj_new.crs = self.crs
         return obj_new
     
-    def rasterize(self, shp_filename, attr_name=None, include_nan=False):
+    def rasterize(self, shp_filename=None, shape_data=None, attribute=None, 
+                  include_nan=False):
         """
         rasterize a shapefile to the raster object and return a bool array
             with Ture value in and on the polygon/polyline or return an array 
@@ -306,9 +309,11 @@ class Raster(object):
 
         Parameters
         ----------
-        shp_filename : str or a pyshp shapefile object and must has the same 
+        shp_filename : str|shapefile name. Must has the same 
             crs with the raster file
-        attr_name : str, optional
+        shape_data: geopandas dataframe or shapely geometry. if shp_filename 
+            not given, this input will be used as the shape data
+        attribute : str or a list of digit values to rasterize with shape, 
             name of the shape attribute to be burned into the raster. 
             The default is None.
         include_nan: logical, optional
@@ -318,44 +323,43 @@ class Raster(object):
         Returns
         -------
         out_array : numpy array
-            True|False values masking the shapefile, or
             Array providing values of one attribute of the shapefile
 
         """
-        from rasterio import mask
         from rasterio import features
-        
-        if type(shp_filename) is str:
-            shp_obj = shapefile.Reader(shp_filename)
-        else:
-            shp_obj = shp_filename
-        
-        shapes_geojson = shp_obj.__geo_interface__
-        shape_geoms = [x['geometry'] for x in shapes_geojson['features']]
-        shape_geoms = [x for x in shape_geoms if x != None]
-        ds_rio = self.to_rasterio_ds()
-        if attr_name is None:
-            out_image, _ = mask.mask(ds_rio, shape_geoms)
-            rasterized_array = out_image[0] # all cells within the polygons
-            if include_nan:
-                rasterized_array[np.isnan(rasterized_array)] = 1
+        if shp_filename is None:
+            if isinstance(shape_data, gpd.geodataframe.GeoDataFrame):
+                geoms = list(shape_data.geometry)
+            elif isinstance(shape_data, shapely.geometry.base.BaseGeometry):
+                geoms = [shape_data]
             else:
-                rasterized_array[np.isnan(rasterized_array)] = ds_rio.nodata
-            index_array = np.full(rasterized_array.shape, True)
-            index_array[rasterized_array == ds_rio.nodata] = False
-            out_array = index_array
+                raise IOError('shape_data must be either a geopandas dataframe'
+                              ' or a shapely object')
         else:
-            shapes_attr = [shp_rec[attr_name] for shp_rec in shp_obj.records()]
-            shapes_iterable = tuple(zip(shape_geoms, shapes_attr))            
-            out_arr = ds_rio.read(1)+np.nan
-            burned = features.rasterize(shapes=shapes_iterable, fill=0, 
-                                        out=out_arr, 
-                                        transform=ds_rio.transform)
-            if include_nan:
-                burned[np.isnan(burned)] = 1
-            burned[burned == ds_rio.nodata] = np.nan
-            out_array = burned
-        ds_rio.close()
+            shape_data = gpd.read_file(shp_filename)
+            geoms = list(shape_data.geometry)
+        if type(attribute) is str:
+            attr_list = list(shape_data[attribute])
+        elif type(attribute) is list:
+            attr_list = attribute
+        else:
+            attr_list = None
+    
+        if attribute is None:
+            shapes_iterable = [(geom, i) for i, geom in enumerate(geoms)]
+        else:
+            if attr_list is None:
+                attr_list = list(attribute)
+            shapes_iterable = [(geom, val) for geom, val in zip(geoms, attr_list)]
+        
+        out_arr = np.full(self.shape, np.nan)
+        geo_transform = self.meta['transform']      
+        burned = features.rasterize(shapes=shapes_iterable, fill=0, 
+                                    out=out_arr, transform=geo_transform)
+        if include_nan:
+            burned[np.isnan(burned)] = 1
+        burned[burned == self.meta['nodata']] = np.nan
+        out_array = burned
         return out_array
         
     def resample(self, new_cellsize, method='bilinear'):
@@ -587,8 +591,7 @@ class Raster(object):
         elif output_file.endswith('.tif'):
             self.write_tif(output_file)
         else:
-            self.write_asc(output_file, compression)
-        
+            self.write_asc(output_file, compression)        
     
     def write_tif(self, output_file, src_epsg=27700, dtype='float64'):
         """ Convert to a rasterio dataset
@@ -831,6 +834,15 @@ class Raster(object):
         """
         obj_duplicate = copy.deepcopy(self)
         return obj_duplicate
+
+def from_tif(filename=None, array=None, meta=None):
+    if filename is not None:
+        obj_ras = Raster(filename)
+    else:
+        header = sp.meta2header(meta)
+        obj_ras = Raster(array=array, header=header, crs=meta['crs'])
+        obj_ras.meta = meta
+    return obj_ras
     
 #%%
 def merge(obj_origin, obj_target, resample_method='bilinear'):

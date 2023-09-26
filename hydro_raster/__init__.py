@@ -11,6 +11,7 @@ To do:
     get sample data
 
 """
+from .Raster import merge, from_tif
 
 def get_sample_data(format_str):
     """ Get sample data for demonstartion
