@@ -188,7 +188,7 @@ def tif_read(file_name):
     yllcorner = y_max-nrows*cellsize
     header = {'ncols':ncols, 'nrows':nrows,
               'xllcorner':xllcorner, 'yllcorner':yllcorner,
-              'cellsize':cellsize, 'NODATA_value':-9999}     
+              'cellsize':cellsize, 'NODATA_value':ras_meta['nodata']}     
     crs = ras_meta['crs']
     return array, header, crs, ras_meta
 

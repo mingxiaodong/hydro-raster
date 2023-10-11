@@ -18,7 +18,6 @@ To do:
 import os
 import copy
 import math
-import shapefile
 import shapely
 import numpy as np
 import rasterio as rio
@@ -269,13 +268,11 @@ class Raster(object):
         ds_rio = self.to_rasterio_ds()
         if type(clip_mask) is str:
             try:
-                with shapefile.Reader(clip_mask) as shp:
-                    shapes_geojson = shp.__geo_interface__
+                shape_data = gpd.read_file(clip_mask)
+                shape_geoms = list(shape_data.geometry)
             except:
                 ds_rio.close()
                 raise IOError(f'cannot find {clip_mask}')
-            shape_geoms = [x['geometry'] for x in shapes_geojson['features']]
-            shape_geoms = [x for x in shape_geoms if x != None]
         elif type(clip_mask) is np.ndarray:
             shape_geoms = {'type':'Polygon', 'coordinates':[clip_mask]}
             shape_geoms = [shape_geoms]
