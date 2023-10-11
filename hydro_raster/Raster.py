@@ -26,8 +26,8 @@ import geopandas as gpd
 from rasterio.features import shapes as rio_shapes
 from shapely.geometry import shape as shapely_shape
 from scipy import interpolate
-from hydro_raster import spatial_analysis as sp
-from hydro_raster import grid_show as gs
+from . import spatial_analysis as sp
+from . import grid_show as gs
 #%% *******************************To deal with raster data********************
 #   ***************************************************************************    
 class Raster(object):
