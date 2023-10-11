@@ -1,2 +1,2 @@
-.. automodule :: demo_functions
+.. automodule :: hydro_raster.demo_functions
    :members:

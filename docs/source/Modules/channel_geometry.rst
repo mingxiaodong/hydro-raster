@@ -1,5 +1,2 @@
-channel_geometry
-================
-
-.. automodule :: channel_geometry
+.. automodule :: hydro_raster.channel_geometry
    :members:

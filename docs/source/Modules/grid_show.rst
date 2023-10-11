@@ -1,2 +1,2 @@
-.. automodule :: grid_show
+.. automodule :: hydro_raster.grid_show
    :members:

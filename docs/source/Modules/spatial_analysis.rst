@@ -1,2 +1,2 @@
-.. automodule :: spatial_analysis
+.. automodule :: hydro_raster.spatial_analysis
    :members:

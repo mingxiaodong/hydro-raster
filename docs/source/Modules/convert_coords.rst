@@ -1,2 +1,2 @@
-.. automodule :: convert_coords
+.. automodule :: hydro_raster.convert_coords
    :members:
