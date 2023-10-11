@@ -1,20 +1,10 @@
-hydro_raster
---------
-Python code to process raster data for hydrological or hydrodynamic modelling, 
-e.g., [SynxFlow](https://github.com/SynxFlow/SynxFlow) or [HiPIMS-CUDA](https://github.com/HEMLab/hipims). The style of this package follows the [Google Python Style Guide](http://google.github.io/styleguide/pyguide.html).
+## Getting started
+
+### Installation
 
 Python version: >=3.6. To use the full function of this package for processing 
 raster and feature files, *rasterio* and *pyshp* are required.
 
-**The CRS of both DEM and Shapfiles must be projected crs whose map unit is meter.**
-
-Functions included in this package:
-
-1. merge raster files
-2. edit raster cell values based on shapefile
-3. convert cross-section lines to river bathymetry raster
-4. remove overhead buildings/bridges on raster 
-5. read, write, and visualise raster file
 
 To install hydro_raster from command window/terminal:
 ```
@@ -26,8 +16,7 @@ git clone https://github.com/mingxiaodong/hydro-raster
 cd hydro-raster
 pip install .
 ```
-
-Tutorial
+### Examples of usage
 
 A [jupyter-notebook file](https://github.com/mingxiaodong/hydro-raster/blob/main/demo/tutorial_edit_DEM.ipynb) is available to show a more detailed tutorial with outputs/plots of its codes.
 
