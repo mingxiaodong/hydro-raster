@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 Welcome to hydro_raster's documentation
-=================================
+=======================================
 
 hydro_raster: Python code to process raster data for hydroligical or hydrodynamic modelling
 

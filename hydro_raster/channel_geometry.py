@@ -5,7 +5,7 @@
 
 """
 channel_geometry
-===========
+==============
 To do:
     deal with polyline and points, sort bank lines, cross-section lines
     construct closed polygon with bank lines and cross lines
