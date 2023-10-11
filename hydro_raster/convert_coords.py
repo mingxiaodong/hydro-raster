@@ -5,7 +5,7 @@
 
 """
 convert_coords
-===========
+============
 To do:
     [objective of this script]
 
@@ -14,7 +14,7 @@ import numpy as np
 from matplotlib import path
 from numpy.linalg import norm
 from scipy import interpolate
-from hipims_io import Raster
+from .Raster import Raster
 from rasterio import mask
 from .channel_geometry import discretize_river_section
 from .channel_geometry import get_intersection, distance_p2l, break_bankline

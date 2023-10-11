@@ -5,7 +5,7 @@
 
 """
 coords_interp
-===========
+=============
 To do:
     [objective of this script]
 
@@ -119,7 +119,7 @@ def point2segment(points, segment):
         coordinates of the projected point.
     position: True|False
         indicate whether the projected point is in/outside the line segment.
-        True: inside, False: outside 
+        True: inside, False: outside
     """
     p0 = segment[0]
     p1 = segment[1]

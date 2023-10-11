@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 interp_line2surface
+===================
 To do:
     [Write the tasks to do in this script]
 
@@ -41,8 +42,8 @@ from numpy.linalg import norm
 from matplotlib import path
 from shapely import geometry
 from scipy import interpolate
-from channel_geometry import get_intersection, in_channel, trim_bankline
-from channel_geometry import nearest_points
+from .channel_geometry import get_intersection, in_channel, trim_bankline
+from .channel_geometry import nearest_points
 #%% 
 def cross_section2grid_elevation(bankline0, bankline1, crossline_list,
                                  grid_header, max_error=None):
