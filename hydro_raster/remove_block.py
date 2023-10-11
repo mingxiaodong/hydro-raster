@@ -60,7 +60,7 @@ ax.plot(pts_coords[:, 0], pts_coords[:, 1], 'r*')
 import fiona
 import copy
 import numpy as np
-import .Raster
+from . import Raster
 from numpy.linalg import norm
 from .channel_geometry import point2segment, remove_duplicate_rows
 from .channel_geometry import distance_p2l, in_channel

@@ -1,2 +1,2 @@
-.. automodule :: interp_line2surface
+.. automodule :: hydro_raster.interp_line2surface
    :members:
