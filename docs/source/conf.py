@@ -12,7 +12,7 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../../hydro_raster'))
+sys.path.insert(0, os.path.abspath('../hydro_raster'))
 
 
 # -- Project information -----------------------------------------------------
