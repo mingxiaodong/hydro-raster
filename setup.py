@@ -38,7 +38,7 @@ setup(
       package_data={'hydro_raster': ['sample/CA1_5m.tif',
                                      'sample/CA1_overhead_features.shp',]},
       install_requires=['rasterio', 'scipy', 'shapely',
-                        'matplotlib', 'numpy', 'pandas', 'imageio', 'geopandas'],
+                        'matplotlib', 'numpy', 'pandas', 'imageio', 'geopandas','pyshp'],
       python_requires='>=3.6')
 
 """
