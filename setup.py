@@ -19,8 +19,8 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
       name='hydro_raster',
-      version='0.0.7',
-      description='To process raster data for hydro-logical/dynamic modelling',
+      version='0.0.8',
+      description='To process raster data for hydrological/hydrodynamic modelling',
       url='https://github.com/mingxiaodong/hydro-raster',
       author='Xiaodong Ming',
       author_email='x.ming@lboro.ac.uk',
