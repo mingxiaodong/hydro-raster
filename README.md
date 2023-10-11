@@ -53,6 +53,7 @@ ras_obj_cut.mapshow()
 ```
 shp_file_name = get_sample_data('shp')
 index_array = ras_obj_cut.rasterize(shp_file_name)
+index_array = index_array>=0
 ```
 4. Change raster cell values within the polygons by adding a fixed value
 ```
