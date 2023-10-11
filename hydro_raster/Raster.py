@@ -643,11 +643,11 @@ class Raster(object):
                 pass
         return ds_rio
     
-    def set_meta(self, src_epsg=None):
+    def set_meta(self, src_epsg=27700):
         """set rasterio meta data
 
         Args:
-            src_epsg (_type_, optional): _description_. Defaults to None.
+            src_epsg (int, optional): epsg code. Defaults to None.
         """
         from rasterio.transform import Affine
         dx = self.cellsize
