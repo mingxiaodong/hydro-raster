@@ -99,15 +99,12 @@ class Raster(object):
                             'bottom':self.extent[2], 'top':self.extent[3]}
         
         # raster value array
-        
         ind = array == header['NODATA_value']
         if ind.sum() > 0:
             self.array = array+0.0
             self.array[ind] = np.nan
         else:
             self.array = array
-            
-        
         # shape and cellsize
         self.shape = self.array.shape
         if array.shape != (header['nrows'], header['ncols']):
@@ -115,7 +112,9 @@ class Raster(object):
                               'nrows and ncols in header'))
         self.cellsize = header['cellsize']
         self.NODATA_value = header['NODATA_value']
-        
+        # meta
+        if not hasattr(self, 'meta'):
+            self.set_meta()
         # num_valid_cells
         self.num_valid_cells = np.sum(~np.isnan(self.array))
         self.size = self.array.size
@@ -480,13 +479,15 @@ class Raster(object):
         return obj_new
     
     def assign_to(self, new_header):
-        """ Assign_to the object to a new grid defined by new_header 
-
+        """Assign_to the object to a new grid defined by new_header. 
         If their cellsizes are not equal, the original Raster will be 
         resampled to the target grid.
 
-        Return:
-            Raster: A newly defined grid
+        Args:
+            new_header (dict): Raster header dict
+
+        Returns:
+            Raster object: A newly defined grid
         """
         rows = np.arange(0, new_header['nrows'])
         cols = np.arange(0, new_header['ncols'])
@@ -506,10 +507,17 @@ class Raster(object):
         return obj_new
     
     def paste_on(self, obj_large, ignore_nan=True):
-        """ Paste the object to a larger grid defined by obj_large and
-        replace corresponding grid values with the object array
+        """Paste the object to a larger grid defined by obj_large and
+        replace corresponding grid values with the object array, their 
+        cellsizes MUST be equal
 
-        If their cellsizes MUST be equal
+        Args:
+            obj_large (Raster object): target object
+            ignore_nan (bool, optional): indicate whether paste nan 
+                values. Defaults to True.
+
+        Returns:
+            Raster object: target object with new array values pasted 
         """
         header_s = self.header
         header_l = obj_large.header
@@ -551,13 +559,13 @@ class Raster(object):
         return xv, yv
     
     def write_asc(self, output_file, compression=False, export_prj=False):
-        """ write raster as asc format file
-
-        Alias: Write_asc
+        """write raster as asc format file
 
         Args:
-            output_file: output file name
-            compression: logic, whether compress write the asc file as gz
+            output_file (string): output file path
+            compression (bool, optional): _description_. Defaults to False.
+            export_prj (bool, optional): indicate whether compress write the 
+                asc file as gz. Defaults to False.
         """
         sp.arcgridwrite(output_file, self.array, self.header, compression)
         # if projection is defined, write .prj file for asc file
@@ -566,21 +574,14 @@ class Raster(object):
             wkt = self.crs.to_wkt()
             with open(prj_file, "w") as prj:        
                 prj.write(wkt)
-        return None
     
     def write(self, output_file, compression=False):
-        """ Export to a file, tif, asc, txt, or gz
-        Parameters
-        ----------
-        output_file : string
-            file name, ends with tif, asc, txt, or gz.
-        compression : logical, optional
-            whether compress or not. The default is False.
+        """Export to a file, tif, asc, txt, or gz
 
-        Returns
-        -------
-        None.
-
+        Args:
+            output_file (string): file name, ends with tif, asc, txt, or gz.
+            compression (bool, optional): flag to indicate whether compress or not. 
+                The default is False.. Defaults to False.
         """
 
         if output_file.endswith('.gz'):
@@ -607,12 +608,12 @@ class Raster(object):
         if 'int' in dtype:
             new_obj = self.to_int(dtype)
             array_data = new_obj.array+0
-            new_obj.get_meta(src_epsg)
+            new_obj.set_meta(src_epsg)
             meta = new_obj.meta
         else:
             array_data = self.array+0.0
             if not hasattr(self, 'meta'):
-                self.get_meta(src_epsg)
+                self.set_meta(src_epsg)
             meta = self.meta # dictionary
         meta['dtype'] = array_data.dtype.name
         nomask = np.isnan(array_data)
@@ -630,7 +631,7 @@ class Raster(object):
         ds_rio : rasterio dataset
         """
         if not hasattr(self, 'meta'):
-            self.get_meta()
+            self.set_meta()
         meta = self.meta
         filename = 'temp.tif'
         ds_rio = rio.open(filename, 'w+', **meta)
@@ -642,18 +643,21 @@ class Raster(object):
                 pass
         return ds_rio
     
-    def get_meta(self, src_epsg=27700):
-        """ Get rasterio meta data
+    def set_meta(self, src_epsg=None):
+        """set rasterio meta data
+
+        Args:
+            src_epsg (_type_, optional): _description_. Defaults to None.
         """
         from rasterio.transform import Affine
         dx = self.cellsize
         x = self.extent_dict['left'] # upper-left corner of the first pixel
         y = self.extent_dict['top']
         transform = Affine.translation(x, y)*Affine.scale(dx, -dx)
-        if not hasattr(self, 'crs'):
-            crs = rio.crs.CRS.from_epsg(src_epsg)
-        else:
+        if hasattr(self, 'crs'):
             crs = self.crs
+        else:
+            crs = rio.crs.CRS.from_epsg(src_epsg)
         ras_meta = {'driver': 'GTiff',
                     'dtype': self.array.dtype.name,
                     'nodata': self.header['NODATA_value'],
