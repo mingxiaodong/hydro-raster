@@ -51,7 +51,7 @@ class Raster(object):
 #%%======================== initialization function ===========================   
     def __init__(self, source_file=None, array=None, header=None, 
                  xllcorner=0, yllcorner=0, cellsize=100, NODATA_value=-9999,
-                 crs=None, num_header_rows=6):
+                 crs=None, num_header_rows=6, read_extent=None):
         """Initialise the object
 
         Args:
@@ -63,6 +63,8 @@ class Raster(object):
                 NODATA_value
             crs: coordinate reference system, either epsg(epsg code, int) or
                 wkt(string), or a rasterio.crs object
+            read_extent (dict, optional): extent window (left, right, bottom, top 
+                in map coordinates) to read part of the tif. Defaults to None.
         Example: define a raster object with a random array
             array = np.random.rand(10, 10)
             header = {'ncols':array.shape[1], 'nrows':array.shape[0],
@@ -75,7 +77,7 @@ class Raster(object):
         # get data from file or arguments
         if type(source_file) is str: # tif, txt, asc, or gz file
             if source_file.endswith('.tif'): # only read the first band
-                array, header, crs, ras_meta = sp.tif_read(source_file)
+                array, header, crs, ras_meta = sp.tif_read(source_file, read_extent)
                 self.meta = ras_meta
             else:
                 array, header, crs = sp.arcgridread(source_file,

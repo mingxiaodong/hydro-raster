@@ -28,6 +28,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import rasterio as rio
 import shapefile
+from rasterio.windows import Window
 from matplotlib import cm
 from matplotlib.colors import ListedColormap
 from matplotlib.patches import Patch
@@ -170,25 +171,40 @@ def arcgridwrite(file_name, array, header, compression=False):
     file_h.close()
     print(file_name + ' created')
 
-def tif_read(file_name):
-    """read tif file (only the 1st band) and return array, header, crs
+def tif_read(file_name, read_extent=None):
+    """read tif file (only the 1st band) and return array, header, crs and meta
+
+    Args:
+        file_name (str): tif file name
+        read_extent (dict, optional): extent window (left, right, bottom, top 
+            in map coordinates) to read part of the raster. Defaults to None.
+
+    Returns:
+        _type_: _description_
     """
     with rio.open(file_name) as src:
-        masked_array = src.read(1, masked=True)
         ras_meta = src.meta
+    if read_extent is None:
+        with rio.open(file_name) as src:
+            masked_array = src.read(1, masked=True)
+    else:
+        X = np.array(read_extent[:2])
+        Y = np.array(read_extent[2:])
+        geo_transform = ras_meta['transform']
+        rows, cols = map2sub(X, Y, geo_transform)
+        slice_r = slice(rows.min(), rows.max())
+        slice_c = slice(cols.min(), cols.max())
+        window = Window.from_slices(slice_r, slice_c)
+        with rio.open(file_name) as src:
+            masked_array = src.read(1, masked=True, 
+                                    window=window)
+            win_transform = src.window_transform(window)
+        ras_meta['height'] = masked_array.data.shape[0]
+        ras_meta['width'] = masked_array.data.shape[1]
+        ras_meta['transform'] = win_transform 
     array = masked_array.data+0.0
     array[array == masked_array.fill_value] = np.nan
-    ncols = ras_meta['width']
-    nrows = ras_meta['height']
-    geo_transform = ras_meta['transform']
-    cellsize = geo_transform[0]
-    x_min = geo_transform[2]
-    y_max = geo_transform[5]
-    xllcorner = x_min
-    yllcorner = y_max-nrows*cellsize
-    header = {'ncols':ncols, 'nrows':nrows,
-              'xllcorner':xllcorner, 'yllcorner':yllcorner,
-              'cellsize':cellsize, 'NODATA_value':ras_meta['nodata']}     
+    header = meta2header(ras_meta)   
     crs = ras_meta['crs']
     return array, header, crs, ras_meta
 
@@ -337,28 +353,37 @@ def shape_extent_to_header(shape, extent, nan_value=-9999):
               'cellsize':cellsize, 'NODATA_value':nan_value}
     return header
 
-def map2sub(X, Y, header):
-    """ convert map coordinates to subscripts of an array
+def map2sub(X, Y, geo_ref):
+    """convert map coordinates to subscripts of the raster 
+    array according to geo_ref which is either a header or
+    a geo_transform object from raster
 
-        array is defined by a geo-reference header
+    Args:
+        X (scalar or numpy.ndarray): Input X coordinate
+        Y (scalar or numpy.ndarray): Input Y coordinate
+        geo_ref (_type_): _description_
 
-    Args: 
-        X: a scalar or numpy array of coordinate values
-        Y: a scalar or numpy array of coordinate values
-
-    Return: 
-        numpy array: rows and cols in the array
+    Returns:
+        tuple (int, int): rows and cols in the array
     """
-    # X and Y coordinate of the centre of the first cell in the array
     X = np.array(X)
     Y = np.array(Y)
-    x0 = header['xllcorner']+0.5*header['cellsize']
-    y0 = header['yllcorner']+(header['nrows']-0.5)*header['cellsize']
-    rows = (y0-Y)/header['cellsize'] # row and col number starts from 0
-    cols = (X-x0)/header['cellsize']
+    if type(geo_ref) is dict: #header
+        cellsize = geo_ref['cellsize']
+        x0 = geo_ref['xllcorner']+0.5*cellsize
+        y0 = geo_ref['yllcorner']+(geo_ref['nrows']-0.5)*cellsize
+        rows = (y0-Y)/cellsize # row and col number starts from 0
+        cols = (X-x0)/cellsize
+    else: # geo_transform
+        cellsize = geo_ref[0]
+        x_ulcorner = geo_ref[2]
+        y_ulcorner = geo_ref[5]
+        cols = (X-x_ulcorner)/cellsize-0.5
+        rows = (y_ulcorner-Y)/cellsize-0.5
+
     if isinstance(rows, np.ndarray):
         rows = np.round(rows).astype('int64')
-        cols = np.round(cols).astype('int64') #.astype('int64')
+        cols = np.round(cols).astype('int64')
     else:
         rows = int(rows)
         cols = int(cols)
