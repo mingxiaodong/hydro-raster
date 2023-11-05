@@ -179,68 +179,41 @@ class Raster(object):
         else:
             raise IOError('crs must be int|string|rasterio.crs object')
 
-    def rect_clip(self, clip_extent, match_extent=False, return_slice=False):
+    def rect_clip(self, clip_extent, return_slice=False):
         """clip raster according to a rectangle extent
 
         Args:
             clip_extent: list of [left, right, bottom, top]
-            match_extent: logical. If True, the x- and y- llcorner coordiantes
-              in header will be adjusted to match the coordinates of extent.
-              And the clip extent must be within the original extent.
-              Otherwise, the header will follow the original object.
             return_slice: logical. If True, the slices of object to clip array
               will be returned as an additional return value.
 
         Return:
             Raster: a new raster object
         """
-        X = np.array(clip_extent[0:2])
-        Y = np.array(clip_extent[2:4])
+        new_extent = clip_extent.copy()
+        if clip_extent[0] < self.extent[0]:
+            new_extent[0] = self.extent[0]
+        if clip_extent[1] > self.extent[1]:
+            new_extent[1] = self.extent[1]:
+        if clip_extent[2] < self.extent[2]:
+            new_extent[2] = self.extent[2]
+        if clip_extent[3] > self.extent[3]:
+            new_extent[3] = self.extent[3]:
+        X = np.array(new_extent[0:2])
+        Y = np.array(new_extent[2:4])
         cellsize = self.cellsize
         header_new = copy.deepcopy(self.header)
-
-        if match_extent:
-            insider_flag = (clip_extent[0] >= self.extent[0]) * \
-                           (clip_extent[1] <= self.extent[1]) * \
-                           (clip_extent[2] >= self.extent[2]) * \
-                           (clip_extent[3] <= self.extent[3])
-            if insider_flag is False:
-                raise ValueError(('clip extent is beyond the extent of '
-                                 'original raster'))
-            xllcorner = X.min()
-            yllcorner = Y.min()
-            nrows = np.around((Y.max()-yllcorner)/cellsize).astype('int')
-            ncols = np.around((X.max()-xllcorner)/cellsize).astype('int')
-            row0, col0 = sp.map2sub(xllcorner+cellsize/2, 
-                                    yllcorner+cellsize/2, self.header)
-            min_row = row0-nrows
-            max_row = row0
-            min_col = col0
-            max_col = col0+ncols
-        else:
-            X_centre = np.array([X.min()+cellsize/2, X.max()-cellsize/2])
-            Y_centre = np.array([Y.min()+cellsize/2, Y.max()-cellsize/2])
-            rows, cols = sp.map2sub(X_centre, Y_centre, self.header)
-            # get x and y centre coords in the original raster
-            x_centre, y_centre = sp.sub2map(rows, cols, self.header)
-            xllcorner = min(x_centre)-cellsize/2
-            yllcorner = min(y_centre)-cellsize/2
-            if max(rows) >= self.header['nrows']:
-                max_row = self.header['nrows']
-            else:
-                max_row = max(rows)+1
-            if max(cols) >= self.header['ncols']:
-                max_col = self.header['ncols']
-            else:
-                max_col = max(cols)+1
-            if min(rows) <= 0:
-                min_row = 0
-            else:
-                min_row = min(rows) 
-            if min(cols) <= 0:
-                min_col = 0
-            else:
-                min_col = min(cols)
+        X_centre = np.array([X.min()+cellsize/2, X.max()-cellsize/2])
+        Y_centre = np.array([Y.min()+cellsize/2, Y.max()-cellsize/2])
+        rows, cols = sp.map2sub(X_centre, Y_centre, self.header)
+        # get x and y centre coords in the original raster
+        x_centre, y_centre = sp.sub2map(rows, cols, self.header)
+        xllcorner = min(x_centre)-cellsize/2
+        yllcorner = min(y_centre)-cellsize/2
+        max_row = max(rows)+1
+        max_col = max(cols)+1
+        min_row = min(rows) 
+        min_col = min(cols)
         loc = (slice(min_row, max_row), slice(min_col, max_col))
         array_new = self.array[loc]
         header_new['nrows'] = array_new.shape[0]
@@ -249,7 +222,7 @@ class Raster(object):
         header_new['yllcorner'] = yllcorner
         obj_new = Raster(array=array_new, header=header_new)
         if hasattr(self, 'crs'):
-            obj_new.crs = self.crs
+            obj_new.set_crs(self.crs)
         if return_slice:
             return obj_new, loc
         else:
@@ -669,6 +642,18 @@ class Raster(object):
                     'crs': crs,
                     'transform': transform}
         self.meta = ras_meta
+        
+    def set_nodata(self, NODATA_value):
+        """Set nodata value of the object
+
+        Args:
+            NODATA_value (int): nodata value
+        """
+        self.nodata = NODATA_value
+        self.header['NODATA_value'] = NODATA_value
+        if hasattr(self, 'meta'):
+            self.meta['nodata'] = NODATA_value
+        
         
     def reproject(self, dst_epsg, output_file=None):
         """Reproject the raster to a different coordinate referenece system
