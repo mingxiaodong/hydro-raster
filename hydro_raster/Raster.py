@@ -190,7 +190,7 @@ class Raster(object):
         Return:
             Raster: a new raster object
         """
-        new_extent = copy.deepcopy(clip_extent)
+        new_extent = list(clip_extent)
         if clip_extent[0] < self.extent[0]:
             new_extent[0] = self.extent[0]
         if clip_extent[1] > self.extent[1]:
@@ -199,6 +199,7 @@ class Raster(object):
             new_extent[2] = self.extent[2]
         if clip_extent[3] > self.extent[3]:
             new_extent[3] = self.extent[3]
+        new_extent = tuple(new_extent)
         X = np.array(new_extent[0:2])
         Y = np.array(new_extent[2:4])
         cellsize = self.cellsize
