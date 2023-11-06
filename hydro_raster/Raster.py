@@ -190,7 +190,7 @@ class Raster(object):
         Return:
             Raster: a new raster object
         """
-        new_extent = clip_extent.copy()
+        new_extent = copy.deepcopy(clip_extent)
         if clip_extent[0] < self.extent[0]:
             new_extent[0] = self.extent[0]
         if clip_extent[1] > self.extent[1]:
