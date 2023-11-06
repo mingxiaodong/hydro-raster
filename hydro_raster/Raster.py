@@ -194,11 +194,11 @@ class Raster(object):
         if clip_extent[0] < self.extent[0]:
             new_extent[0] = self.extent[0]
         if clip_extent[1] > self.extent[1]:
-            new_extent[1] = self.extent[1]:
+            new_extent[1] = self.extent[1]
         if clip_extent[2] < self.extent[2]:
             new_extent[2] = self.extent[2]
         if clip_extent[3] > self.extent[3]:
-            new_extent[3] = self.extent[3]:
+            new_extent[3] = self.extent[3]
         X = np.array(new_extent[0:2])
         Y = np.array(new_extent[2:4])
         cellsize = self.cellsize
