@@ -333,6 +333,37 @@ class Raster(object):
         burned[burned == self.meta['nodata']] = np.nan
         out_array = burned
         return out_array
+    
+    def line2sub(self, line_coords):
+        nrows, ncols = self.shape
+        line_coords = np.array(line_coords)
+        r, c = sp.map2sub(line_coords[:, 0], line_coords[:, 1], self.header)
+        print(r.max())
+        print(c.min())
+        subs_all = np.c_[r, c]
+        line_subs = []
+        for N in np.arange(r.size-1):
+            subs_p0 = subs_all[N]
+            subs_p1 = subs_all[N+1]
+            sub_range = np.abs(subs_p1-subs_p0)
+            sub_steps = sub_range.max()+1
+            seg_rows = np.linspace(subs_p0[0], subs_p1[0], sub_steps)
+            seg_rows = seg_rows.round().astype('int32')
+            seg_cols = np.linspace(subs_p0[1], subs_p1[1], sub_steps)
+            seg_cols = seg_cols.round().astype('int32')
+            seg_subs = np.c_[seg_rows, seg_cols]
+            if (seg_subs[-1]==subs_p1).all():
+                line_subs.append(seg_subs[:-1])
+            else:
+                line_subs.append(seg_subs)
+        line_subs = np.concatenate(line_subs)
+        sub_rows = line_subs[:, 0]
+        sub_cols = line_subs[:, 1]
+        ind_valid_r = np.logical_and(sub_rows>=0, sub_rows<nrows)
+        ind_valid_c = np.logical_and(sub_cols>=0, sub_cols<ncols)
+        ind_valid = np.logical_and(ind_valid_r, ind_valid_c)
+        return sub_rows[ind_valid], sub_cols[ind_valid]
+        
         
     def resample(self, new_cellsize, method='bilinear'):
         """ Resample the raster object to a new resolution
