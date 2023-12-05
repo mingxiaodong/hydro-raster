@@ -338,8 +338,6 @@ class Raster(object):
         nrows, ncols = self.shape
         line_coords = np.array(line_coords)
         r, c = sp.map2sub(line_coords[:, 0], line_coords[:, 1], self.header)
-        print(r.max())
-        print(c.min())
         subs_all = np.c_[r, c]
         line_subs = []
         for N in np.arange(r.size-1):
