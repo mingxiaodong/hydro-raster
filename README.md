@@ -3,6 +3,8 @@ hydro_raster
 Python code to process raster data for hydrological or hydrodynamic modelling, 
 e.g., [SynxFlow](https://github.com/SynxFlow/SynxFlow) or [HiPIMS-CUDA](https://github.com/HEMLab/hipims). The style of this package follows the [Google Python Style Guide](http://google.github.io/styleguide/pyguide.html).
 
+Full documentation about how to install and use is [here](https://hydro-raster.readthedocs.io/en/latest/index.html).
+
 Python version: >=3.6. To use the full function of this package for processing 
 raster and feature files, *rasterio* and *pyshp* are required.
 
