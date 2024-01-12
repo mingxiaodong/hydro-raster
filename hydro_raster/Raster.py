@@ -580,23 +580,24 @@ class Raster(object):
             with open(prj_file, "w") as prj:        
                 prj.write(wkt)
     
-    def write(self, output_file, compression=False):
+    def write(self, output_file, compression=True):
         """Export to a file, tif, asc, txt, or gz
 
         Args:
             output_file (string): file name, ends with tif, asc, txt, or gz.
             compression (bool, optional): flag to indicate whether compress or not. 
-                The default is False.. Defaults to False.
+                The default is True.. Defaults to True.
         """
 
         if output_file.endswith('.gz'):
             self.write_asc(output_file, compression=True)
         elif output_file.endswith('.tif'):
-            self.write_tif(output_file)
+            self.write_tif(output_file, compression)
         else:
             self.write_asc(output_file, compression)        
     
-    def write_tif(self, output_file, src_epsg=27700, dtype='float64'):
+    def write_tif(self, output_file, compression=True, src_epsg=27700, 
+                  dtype='float32'):
         """ Convert to a rasterio dataset
         
         Args:
@@ -623,8 +624,12 @@ class Raster(object):
         meta['dtype'] = array_data.dtype.name
         nomask = np.isnan(array_data)
         array_data[nomask] = meta['nodata']
-        with rio.open(filename, 'w', **meta) as out_f:
-            out_f.write(array_data, 1)
+        if compression is True:
+            with rio.open(filename, 'w', **meta, compress='lzw') as out_f:
+                out_f.write(array_data, 1)
+        else:
+            with rio.open(filename, 'w', **meta) as out_f:
+                out_f.write(array_data, 1)            
         meta['dtype'] = self.array.dtype.name
     
     def to_rasterio_ds(self):
