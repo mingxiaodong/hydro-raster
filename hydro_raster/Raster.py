@@ -116,7 +116,8 @@ class Raster(object):
         self.NODATA_value = header['NODATA_value']
         # meta
         if not hasattr(self, 'meta'):
-            self.set_meta()
+            if hasattr(self, 'crs'):
+                self.set_meta()
         # num_valid_cells
         self.num_valid_cells = np.sum(~np.isnan(self.array))
         self.size = self.array.size
@@ -164,7 +165,7 @@ class Raster(object):
         return new_obj
 
     def set_crs(self, crs):
-        """set reference coordinate system
+        """set reference coordinate system and set meta
         Parameters
         ----------
         crs : int|string|rasterio.crs object
@@ -178,6 +179,8 @@ class Raster(object):
             self.crs = crs
         else:
             raise IOError('crs must be int|string|rasterio.crs object')
+        if not hasattr(self, 'meta'):
+            self.set_meta()
 
     def rect_clip(self, clip_extent, return_slice=False):
         """clip raster according to a rectangle extent
@@ -596,15 +599,12 @@ class Raster(object):
         else:
             self.write_asc(output_file, compression)        
     
-    def write_tif(self, output_file, compression=True, src_epsg=27700, 
+    def write_tif(self, output_file, compression=True, 
                   dtype='float32'):
         """ Convert to a rasterio dataset
         
         Args:
             output_file: a string to give output file name
-            src_epsg: int scalar to give EPSG code of the coordinate reference
-                system of the original dataset, default is 27700 for BNG
-
         """
         
         if output_file.endswith('.tif'):
@@ -614,13 +614,11 @@ class Raster(object):
         if 'int' in dtype:
             new_obj = self.to_int(dtype)
             array_data = new_obj.array+0
-            new_obj.set_meta(src_epsg)
-            meta = new_obj.meta
         else:
             array_data = self.array+0.0
-            if not hasattr(self, 'meta'):
-                self.set_meta(src_epsg)
-            meta = self.meta # dictionary
+        if not hasattr(self, 'meta'):
+            self.set_meta()
+        meta = self.meta.copy()
         meta['dtype'] = array_data.dtype.name
         nomask = np.isnan(array_data)
         array_data[nomask] = meta['nodata']
@@ -630,7 +628,6 @@ class Raster(object):
         else:
             with rio.open(filename, 'w', **meta) as out_f:
                 out_f.write(array_data, 1)            
-        meta['dtype'] = self.array.dtype.name
     
     def to_rasterio_ds(self):
         """
@@ -653,8 +650,8 @@ class Raster(object):
                 pass
         return ds_rio
     
-    def set_meta(self, src_epsg=27700):
-        """set rasterio meta data
+    def set_meta(self, src_epsg=None):
+        """set rasterio meta data based on crs or a given epsg number
 
         Args:
             src_epsg (int, optional): epsg code. Defaults to None.
@@ -667,7 +664,12 @@ class Raster(object):
         if hasattr(self, 'crs'):
             crs = self.crs
         else:
-            crs = rio.crs.CRS.from_epsg(src_epsg)
+            if src_epsg is None:
+                raise IOError('Raster object has no crs, '
+                              'the epsg code must be given')
+            else:
+                crs = rio.crs.CRS.from_epsg(src_epsg)
+                self.crs = crs
         ras_meta = {'driver': 'GTiff',
                     'dtype': self.array.dtype.name,
                     'nodata': self.header['NODATA_value'],
